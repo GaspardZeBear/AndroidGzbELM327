@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,30 +9,184 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
     tools:context="com.gzb.elm327.MainActivity">
-
-    <CheckBox
+    <TableLayout
+        android:stretchColumns="*">
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            >
+        <CheckBox
         android:id="@+id/checkbox_led_1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="10dp"
         android:checked="false"
-        android:scaleX="1.7"
-        android:scaleY="1.7"
-        android:text="Toggle LED"
-        android:textStyle="bold" />
+        android:text="Toggle LED" />
+        </TableRow>
+    </TableLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:orientation="vertical">
-
-        <LinearLayout
+    <TableLayout
+        android:stretchColumns="*"
+        >
+        <TableRow
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal">
+            android:layout_height="match_parent" >
+
+            <ToggleButton
+                android:id="@+id/s30"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOn="30"
+                android:textOff="30"
+                android:layout_margin="2dp"/>
+
+            <ToggleButton
+                android:id="@+id/s50"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:textOn="50"
+                android:textOff="50"
+                android:layout_margin="2dp"/>
+
+            <ToggleButton
+                android:id="@+id/s70"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOn="70"
+                android:textOff="70"
+                android:layout_margin="2dp"/>
+
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+
+            <ToggleButton
+                android:id="@+id/s80"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOn="80"
+                android:textOff="80"
+                android:padding="1dp"
+                android:layout_margin="2dp"/>
+
+            <ToggleButton
+                android:id="@+id/s90"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOn="90"
+                android:textOff="90"
+                android:padding="1dp"
+                android:layout_margin="2dp"/>
+
+
+            <ToggleButton
+                android:id="@+id/s100"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOn="100"
+                android:textOff="100"
+                android:padding="1dp"
+                android:layout_margin="2dp"/>
+
+
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+
+            <ToggleButton
+                android:id="@+id/s110"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOn="110"
+                android:textOff="110"
+                android:padding="1dp"
+                android:layout_margin="2dp"/>
+
+            <ToggleButton
+                android:id="@+id/s120"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOn="120"
+                android:textOff="120"
+                android:padding="1dp"
+                android:layout_margin="2dp"/>
+
+            <ToggleButton
+                android:id="@+id/s130"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOn="130"
+                android:textOff="130"
+                android:padding="1dp"
+                android:layout_margin="2dp"/>
+
+        </TableRow>
+    </TableLayout>
+
+
+    <TableLayout android:shrinkColumns="*">
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+            <Button
+                android:id="@+id/minus10"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:text="--"
+                android:gravity="center_horizontal"/>
+
+
+            <Button
+                android:id="@+id/minus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:text="-"
+                android:gravity="center_horizontal"/>
+
+            <Button
+                android:id="@+id/zero"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:text="0"
+                android:gravity="center_horizontal"/>
+
+            <Button
+                android:id="@+id/plus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:text="+"
+                android:gravity="center_horizontal"/>
+
+            <Button
+                android:id="@+id/plus10"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:text="++"
+                android:gravity="center_horizontal"/>
+
+
+        </TableRow>
+    </TableLayout>
+
+
+    <TableLayout
+        android:stretchColumns="*">
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            >
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -48,16 +202,17 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="0.9"
                 android:ellipsize="end"
+                android:textSize="30sp"
                 android:maxLines="1"
                 android:text="&lt;Speed>" />
-        </LinearLayout>
-
-        <LinearLayout
+        </TableRow>
+    </TableLayout>
+    <TableLayout
+        android:stretchColumns="*">
+        <TableRow
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal">
-
+            android:layout_height="match_parent"
+            >
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -75,13 +230,15 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="&lt;rpm>" />
-        </LinearLayout>
-    </LinearLayout>
+        </TableRow>
+     </TableLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+    <TableLayout
+        android:stretchColumns="*">
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            >
 
         <TextView
             android:layout_width="wrap_content"
@@ -100,36 +257,44 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="&lt;Bluetooth Status>" />
-    </LinearLayout>
+        </TableRow>
+    </TableLayout>
 
-
-    <Button
-        android:id="@+id/scan"
+    <TableLayout
+        android:stretchColumns="*"
+        >
+    <TableRow
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Bluetooth ON" />
-
-    <Button
+        android:layout_height="match_parent" >
+        <Button
         android:id="@+id/off"
-        android:layout_width="match_parent"
+        android:layout_width="50dp"
         android:layout_height="wrap_content"
-        android:text="Bluetooth OFF" />
+        android:text="BT OFF" />
 
-    <Button
+        <Button
+        android:id="@+id/scan"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:text="BT ON" />
+
+        <Button
         android:id="@+id/paired_btn"
-        android:layout_width="match_parent"
+        android:layout_width="50dp"
         android:layout_height="wrap_content"
-        android:text="Show paired Devices" />
+        android:text="Paired" />
 
-    <Button
+        <Button
         android:id="@+id/discover"
-        android:layout_width="match_parent"
+        android:layout_width="50dp"
         android:layout_height="wrap_content"
-        android:text="Discover New Devices" />
+        android:text="Discover" />
+        </TableRow>
+    </TableLayout>
 
     <ListView
         android:id="@+id/devices_list_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:choiceMode="singleChoice" />
-</LinearLayout>
+</TableLayout>
