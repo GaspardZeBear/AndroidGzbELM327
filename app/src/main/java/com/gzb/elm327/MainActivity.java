@@ -9,6 +9,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -26,10 +29,12 @@ import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.nio.charset.StandardCharsets;
@@ -49,12 +54,24 @@ public class MainActivity extends AppCompatActivity {
     private TextView mBluetoothStatus;
     private TextView mSpeed;
     private TextView mRpm;
+    private TextView offset;
     private Button mScanBtn;
     private Button mOffBtn;
     private Button mListPairedDevicesBtn;
     private Button mDiscoverBtn;
+    private Button minusButton;
+    private Button minus10Button;
+    private Button zeroButton;
+    private Button plusButton;
+    private Button plus10Button;
     private ListView mDevicesListView;
     private CheckBox mLED1;
+    ToggleButton[] toggleButtons;
+    HashMap<ToggleButton,Integer> speeds;
+    long locationChangedTimeMillis;
+    float maxSpeed;
+    float speedOffset;
+    float readSpeed;
 
     private BluetoothAdapter mBTAdapter;
     private Set<BluetoothDevice> mPairedDevices;
@@ -72,11 +89,42 @@ public class MainActivity extends AppCompatActivity {
         mBluetoothStatus = (TextView)findViewById(R.id.bluetooth_status);
         mSpeed = (TextView) findViewById(R.id.speed);
         mRpm = (TextView) findViewById(R.id.rpm);
+        offset = (TextView)findViewById(R.id.offset);
         mScanBtn = (Button)findViewById(R.id.scan);
         mOffBtn = (Button)findViewById(R.id.off);
         mDiscoverBtn = (Button)findViewById(R.id.discover);
         mListPairedDevicesBtn = (Button)findViewById(R.id.paired_btn);
         mLED1 = (CheckBox)findViewById(R.id.checkbox_led_1);
+        minusButton=(Button)findViewById(R.id.minus);
+        minus10Button=(Button)findViewById(R.id.minus10);
+        zeroButton=(Button)findViewById(R.id.zero);
+        plusButton=(Button)findViewById(R.id.plus);
+        plus10Button=(Button)findViewById(R.id.plus10);
+
+        toggleButtons = new ToggleButton[9];
+        toggleButtons[0] = (ToggleButton)findViewById(R.id.s30);
+        toggleButtons[1] = (ToggleButton)findViewById(R.id.s50);
+        toggleButtons[2] = (ToggleButton)findViewById(R.id.s70);
+        toggleButtons[3] = (ToggleButton)findViewById(R.id.s80);
+        toggleButtons[4] = (ToggleButton)findViewById(R.id.s90);
+        toggleButtons[5] = (ToggleButton)findViewById(R.id.s100);
+        toggleButtons[6] = (ToggleButton)findViewById(R.id.s110);
+        toggleButtons[7] = (ToggleButton)findViewById(R.id.s120);
+        toggleButtons[8] = (ToggleButton)findViewById(R.id.s130);
+
+        speeds=new HashMap<ToggleButton,Integer>();
+        speeds.put((ToggleButton)findViewById(R.id.s30),30);
+        speeds.put((ToggleButton)findViewById(R.id.s50),50);
+        speeds.put((ToggleButton)findViewById(R.id.s70),70);
+        speeds.put((ToggleButton)findViewById(R.id.s80),80);
+        speeds.put((ToggleButton)findViewById(R.id.s90),90);
+        speeds.put((ToggleButton)findViewById(R.id.s100),100);
+        speeds.put((ToggleButton)findViewById(R.id.s110),110);
+        speeds.put((ToggleButton)findViewById(R.id.s120),120);
+        speeds.put((ToggleButton)findViewById(R.id.s130),130);
+
+        maxSpeed=50;
+        readSpeed=0;
 
         mBTArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
         mBTAdapter = BluetoothAdapter.getDefaultAdapter(); // get a handle on the bluetooth radio
@@ -89,6 +137,85 @@ public class MainActivity extends AppCompatActivity {
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
 
+        for (ToggleButton t : toggleButtons) {
+            t.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    for (ToggleButton t1 : toggleButtons) {
+                        t1.setBackgroundColor(Color.LTGRAY);
+                        t1.setPadding(50,5,5,5);
+                    }
+                    Log.d("xxx", "onClick: " + speeds.get(t).toString());
+                    if (t.isChecked()) {
+                        t.setBackgroundColor(Color.YELLOW);
+                        maxSpeed=speeds.get(t);
+                        //binding.offset.setText(String.format("%.0f",speedOffset));
+
+                        mSpeed.setText(String.format("%.0f",readSpeed));
+                        //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
+                    } else {
+                        t.setBackgroundColor(Color.LTGRAY);
+                        maxSpeed=999;
+                        //binding.offset.setText(String.format("%.0f",speedOffset));
+                        //binding.readSpeed.setText("+Inf");
+                    }
+
+                    Log.d("xxx", "onClick: maxSpeed " + String.valueOf(maxSpeed));
+                }
+            });
+        };
+
+
+        plusButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                speedOffset++ ;
+                offset.setText(String.format("%.0f",speedOffset));
+                //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
+                mSpeed.setText(String.format("%.0f",readSpeed));
+            }
+        });
+
+        plus10Button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                speedOffset += 10 ;
+                offset.setText(String.format("%.0f",speedOffset));
+                mSpeed.setText(String.format("%.0f",readSpeed));
+                //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
+            }
+        });
+
+        minusButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+        public void onClick(View v) {
+                speedOffset-- ;
+                offset.setText(String.format("%.0f",speedOffset));
+                mSpeed.setText(String.format("%.0f",readSpeed));
+                //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
+            }
+        });
+
+        minus10Button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                speedOffset -= 10  ;
+                offset.setText(String.format("%.0f",speedOffset));
+                mSpeed.setText(String.format("%.0f",readSpeed));
+                //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
+            }
+        });
+
+
+        zeroButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                speedOffset=0 ;
+                offset.setText(String.format("%.0f",speedOffset));
+                mSpeed.setText(String.format("%.0f",readSpeed));
+                //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
+            }
+        });
 
         mHandler = new Handler(Looper.getMainLooper()){
             @Override
@@ -107,6 +234,23 @@ public class MainActivity extends AppCompatActivity {
                     ELM327Response resp=new ELM327Response(str);
                     Log.d("Main","pidAlias" + resp.getPidAlias());
                     if (resp.getPidAlias().equals("SPEED")){
+                        readSpeed=resp.getPidVal();
+
+                        float currentSpeed = readSpeed + speedOffset  ;
+                        if (currentSpeed > maxSpeed) {
+                            mSpeed.setTextColor(Color.RED);
+                            mSpeed.setBackgroundColor(Color.rgb(200,50,50));
+                            try {
+                                ToneGenerator toneGen1 = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
+                                toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 150);
+                            } catch (Exception e) {
+                                Log.d("Main", "ToneGenerator: " + e.getMessage());
+                            }
+                        } else {
+                            mSpeed.setTextColor(Color.GREEN);
+                            mSpeed.setBackgroundColor(Color.rgb(0,200,50));
+                        }
+
                         mSpeed.setText(String.valueOf(resp.getPidVal()));
                     } else if (resp.getPidAlias().equals("RPM")) {
                         mRpm.setText(String.valueOf(resp.getPidVal()/4));

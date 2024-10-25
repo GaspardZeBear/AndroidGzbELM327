@@ -21,7 +21,6 @@ public class ELM327Response {
 
     public ELM327Response(String str) {
         pidAlias="UNKNOWN";
-        strPidVal="?";
         strPidVal="-1";
         pidVal=-1;
         this.parseResponseData(str) ;
@@ -77,32 +76,32 @@ public class ELM327Response {
     }
 
     public int computePidVal(String str) {
-        Log.d("ELM327Response", "computePidVal(): str " + str);
+        //Log.d("ELM327Response", "computePidVal(): str " + str);
         char[] ch = str.toCharArray();
         int power=ch.length;
         int total=0;
         for (char c : ch) {
-            Log.d("ELM327Response", "computePidVal(): c " + c);
+            //Log.d("ELM327Response", "computePidVal(): c " + c);
             int a = Character.getNumericValue(c)*(int)Math.pow(16,power-1);
             total += a;
             power--;
         //System.out.println(c + " int value: " + a + " total " + total);
         }
-        Log.d("ELM327Response", "computePidVal(): total " + total);
+        //Log.d("ELM327Response", "computePidVal(): total " + total);
         return(total);
     }
 
 
     public void parseResponseData(String str) {
         String data=getAsciiHexaString(str);
-        Log.d("ELM327Response", "parseResponseData(): " + data);
+        //Log.d("ELM327Response", "parseResponseData(): " + data);
         if (data.length() > 2  && data.startsWith("41")) {
-            Log.d("ELM327Response", "parseResponseData(): 41 found");
+            //Log.d("ELM327Response", "parseResponseData(): 41 found");
             pid = data.substring(2,4);
-            for (Map.Entry<String, String> entry : ELM327Response.pidHash.entrySet()) {
-                Log.d("ELM327Response","map " + entry.getKey() + ": " + entry.getValue());
-            }
-            Log.d("ELM327Response", "parseResponseData(): pid " + pid + " OC : <" + ELM327Response.pidHash.get("0C") + ">");
+            //for (Map.Entry<String, String> entry : ELM327Response.pidHash.entrySet()) {
+            //    Log.d("ELM327Response","map " + entry.getKey() + ": " + entry.getValue());
+            //}
+            //Log.d("ELM327Response", "parseResponseData(): pid " + pid + " OC : <" + ELM327Response.pidHash.get("0C") + ">");
             if (ELM327Response.pidHash.containsKey(pid)) {
                 pidAlias=ELM327Response.pidHash.get(pid);
             } else {

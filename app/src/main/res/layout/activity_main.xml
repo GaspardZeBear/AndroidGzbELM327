@@ -205,6 +205,15 @@
                 android:textSize="30sp"
                 android:maxLines="1"
                 android:text="&lt;Speed>" />
+
+            <TextView
+                android:id="@+id/offset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="20sp"
+                android:text="0"
+                android:gravity="center_horizontal"/>
+
         </TableRow>
     </TableLayout>
     <TableLayout
