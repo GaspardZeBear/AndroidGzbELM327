@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Handler mHandler; // Our main handler that will receive callback notifications
     private ConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
+    private ELM327Poller mPollerThread;
     private BluetoothSocket mBTSocket = null; // bi-directional client-to-client data path
 
     @Override
@@ -411,48 +412,18 @@ public class MainActivity extends AppCompatActivity {
                         mConnectedThread.start();
                         mHandler.obtainMessage(CONNECTING_STATUS, 1, -1, name)
                                 .sendToTarget();
-                    }
+                        // Starts the thread will will emit ELM327 commands
+                        mPollerThread=new ELM327Poller(mConnectedThread);
+                        mPollerThread.start();
+                                            }
                 }
             }.start();
 
             //-----------------------------------------------------------------------------------
             // Test thread
             //-----------------------------------------------------------------------------------
-
-
             testThread=new TestThread();
-            testThread.start();
-
-
-            //-----------------------------------------------------------------------------------
-            // Thread that emits ELM327 command thru Bluetooth connection
-            //-----------------------------------------------------------------------------------
-            new Thread() {
-                @Override
-                public void run() {
-                    boolean fail = false;
-                    while (true) {
-                        Log.d("MainPolling","Executing");
-                        if (mConnectedThread != null) {//First check to make sure thread created
-                            //mConnectedThread.write("ATE0\r\n");
-                            mConnectedThread.write("010C\n");
-                            SystemClock.sleep(100);
-                        } else {
-                            Log.d("MainPolling","Not connected");
-                            SystemClock.sleep(5000);
-                        }
-                        if (mConnectedThread != null) {//First check to make sure thread created
-                            //mConnectedThread.write("ATE0\r\n");
-                            mConnectedThread.write("010D\n");
-                            SystemClock.sleep(100);
-                        } else {
-                            Log.d("MainPolling","Not connected");
-                            SystemClock.sleep(5000);
-                        }
-                        SystemClock.sleep(1000);
-                    }
-                };
-            }.start();
+            //testThread.start();
         }
     };
 

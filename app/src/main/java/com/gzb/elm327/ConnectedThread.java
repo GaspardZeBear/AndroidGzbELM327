@@ -17,12 +17,14 @@ public class ConnectedThread extends Thread {
     private final InputStream mmInStream;
     private final OutputStream mmOutStream;
     private final Handler mHandler;
+    private int writeFailCounter;
 
     public ConnectedThread(BluetoothSocket socket, Handler handler) {
         mmSocket = socket;
         mHandler = handler;
         InputStream tmpIn = null;
         OutputStream tmpOut = null;
+        writeFailCounter=0;
 
         // Get the input and output streams, using temp objects because
         // member streams are final
@@ -35,7 +37,7 @@ public class ConnectedThread extends Thread {
         mmOutStream = tmpOut;
     }
 
- 
+
     @Override
     public void run() {
         // Keep listening to the InputStream until an exception occurs
@@ -56,17 +58,27 @@ public class ConnectedThread extends Thread {
                 break;
             }
         }
+        Log.d("ConnectedThread","Broke run() ");
     }
 
     /* Call this from the main activity to send data to the remote device */
-    public void write(String input) {
+    public void write(String input) throws Exception {
         //Log.d("WRITE","Thread WRITE value : " + input);
         byte[] bytes = input.getBytes();           //converts entered String into bytes
         try {
             mmOutStream.write(bytes);
+            if (writeFailCounter > 0) {
+                writeFailCounter--;
+            }
         } catch (IOException e) {
             mHandler.obtainMessage(MainActivity.MESSAGE_WRITE_FAILED, "Failed").sendToTarget();
+            writeFailCounter++;
             Log.d("ConnectedThread","Write failed :  " + e.getMessage());
+            if (writeFailCounter > 10 ) {
+                Log.d("ConnectedThread","Write failed cancel  ");
+                cancel();
+                throw new Exception("Socket closed");
+            }
         }
     }
 
@@ -74,6 +86,8 @@ public class ConnectedThread extends Thread {
     public void cancel() {
         try {
             mmSocket.close();
-        } catch (IOException e) { }
+        } catch (IOException e) {
+            Log.d("ConnectedThread","Close socket failed :  " + e.getMessage());
+        }
     }
 }
