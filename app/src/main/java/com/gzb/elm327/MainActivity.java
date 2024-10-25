@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_ENABLE_BT = 1; // used to identify adding bluetooth names
     public final static int MESSAGE_READ = 2; // used in bluetooth handler to identify message update
     private final static int CONNECTING_STATUS = 3; // used in bluetooth handler to identify message status
+    public final static int MESSAGE_WRITE_FAILED = -1; // used in bluetooth handler to identify message status
 
     // GUI Components
     private TextView mBluetoothStatus;
@@ -65,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
     private Button plusButton;
     private Button plus10Button;
     private ListView mDevicesListView;
-    private CheckBox mLED1;
+    private CheckBox mActive;
     ToggleButton[] toggleButtons;
     HashMap<ToggleButton,Integer> speeds;
     long locationChangedTimeMillis;
@@ -73,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
     float speedOffset;
     float readSpeed;
 
+    TestThread testThread;
     private BluetoothAdapter mBTAdapter;
     private Set<BluetoothDevice> mPairedDevices;
     private ArrayAdapter<String> mBTArrayAdapter;
@@ -94,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
         mOffBtn = (Button)findViewById(R.id.off);
         mDiscoverBtn = (Button)findViewById(R.id.discover);
         mListPairedDevicesBtn = (Button)findViewById(R.id.paired_btn);
-        mLED1 = (CheckBox)findViewById(R.id.checkbox_led_1);
+        mActive = (CheckBox)findViewById(R.id.active);
         minusButton=(Button)findViewById(R.id.minus);
         minus10Button=(Button)findViewById(R.id.minus10);
         zeroButton=(Button)findViewById(R.id.zero);
@@ -145,22 +147,16 @@ public class MainActivity extends AppCompatActivity {
                         t1.setBackgroundColor(Color.LTGRAY);
                         t1.setPadding(50,5,5,5);
                     }
-                    Log.d("xxx", "onClick: " + speeds.get(t).toString());
+                    Log.d("Main", "ToggleButton onClick: " + speeds.get(t).toString());
                     if (t.isChecked()) {
                         t.setBackgroundColor(Color.YELLOW);
                         maxSpeed=speeds.get(t);
-                        //binding.offset.setText(String.format("%.0f",speedOffset));
-
                         mSpeed.setText(String.format("%.0f",readSpeed));
-                        //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
                     } else {
                         t.setBackgroundColor(Color.LTGRAY);
                         maxSpeed=999;
-                        //binding.offset.setText(String.format("%.0f",speedOffset));
-                        //binding.readSpeed.setText("+Inf");
                     }
-
-                    Log.d("xxx", "onClick: maxSpeed " + String.valueOf(maxSpeed));
+                    Log.d("Main", "onClick: maxSpeed " + String.valueOf(maxSpeed));
                 }
             });
         };
@@ -168,74 +164,40 @@ public class MainActivity extends AppCompatActivity {
 
         plusButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                speedOffset++ ;
-                offset.setText(String.format("%.0f",speedOffset));
-                //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
-                mSpeed.setText(String.format("%.0f",readSpeed));
-            }
+            public void onClick(View v) {offsetButtonManager(1);};
         });
 
         plus10Button.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                speedOffset += 10 ;
-                offset.setText(String.format("%.0f",speedOffset));
-                mSpeed.setText(String.format("%.0f",readSpeed));
-                //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
-            }
+            public void onClick(View v) {offsetButtonManager(10);};
         });
 
         minusButton.setOnClickListener(new View.OnClickListener() {
             @Override
-        public void onClick(View v) {
-                speedOffset-- ;
-                offset.setText(String.format("%.0f",speedOffset));
-                mSpeed.setText(String.format("%.0f",readSpeed));
-                //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
-            }
+            public void onClick(View v) {offsetButtonManager(-1);};
         });
 
         minus10Button.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                speedOffset -= 10  ;
-                offset.setText(String.format("%.0f",speedOffset));
-                mSpeed.setText(String.format("%.0f",readSpeed));
-                //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
-            }
+            public void onClick(View v) {offsetButtonManager(-10);};
         });
-
 
         zeroButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                speedOffset=0 ;
-                offset.setText(String.format("%.0f",speedOffset));
-                mSpeed.setText(String.format("%.0f",readSpeed));
-                //binding.setpoint.setText(String.format("%.0f",maxSpeed+maxSpeedOffset));
-            }
+            public void onClick(View v) {offsetButtonManager();};
         });
 
         mHandler = new Handler(Looper.getMainLooper()){
             @Override
             public void handleMessage(Message msg){
                 if(msg.what == MESSAGE_READ){
-                    //String readMessage = null;
-                    //readMessage = new String((byte[]) msg.obj, StandardCharsets.US_ASCII);
-                    //readMessage="Hello Gzb";
-                    //readMessage=(String)msg.obj;
-                    //Log.d("GUI handleMessage READ", "MSG : " + readMessage);
                     byte[] buffer = new byte[1024];
                     Arrays.fill(buffer,(byte)0x00);
                     buffer=(byte[])msg.obj;
                     String str = new String(buffer, 0, buffer.length,StandardCharsets.US_ASCII);
-                    //mSpeed.setText(readMessage);
                     ELM327Response resp=new ELM327Response(str);
-                    Log.d("Main","pidAlias" + resp.getPidAlias());
                     if (resp.getPidAlias().equals("SPEED")){
                         readSpeed=resp.getPidVal();
-
                         float currentSpeed = readSpeed + speedOffset  ;
                         if (currentSpeed > maxSpeed) {
                             mSpeed.setTextColor(Color.RED);
@@ -250,7 +212,6 @@ public class MainActivity extends AppCompatActivity {
                             mSpeed.setTextColor(Color.GREEN);
                             mSpeed.setBackgroundColor(Color.rgb(0,200,50));
                         }
-
                         mSpeed.setText(String.valueOf(resp.getPidVal()));
                     } else if (resp.getPidAlias().equals("RPM")) {
                         mRpm.setText(String.valueOf(resp.getPidVal()/4));
@@ -266,6 +227,11 @@ public class MainActivity extends AppCompatActivity {
                     else
                         mBluetoothStatus.setText(getString(R.string.BTconnFail));
                 }
+
+                if (msg.what == MESSAGE_WRITE_FAILED) {
+                    mSpeed.setBackgroundColor(Color.rgb(255,125,50));
+                    mSpeed.setText(String.valueOf(-1));
+                }
             }
         };
 
@@ -275,21 +241,16 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(),getString(R.string.sBTdevNF),Toast.LENGTH_SHORT).show();
         }
         else {
-            mLED1.setOnClickListener(new View.OnClickListener(){
+            mActive.setOnClickListener(new View.OnClickListener(){
                 //byte[] rpm={0x01,0x0C};
                 @Override
 
                 public void onClick(View v){
-                   if (mConnectedThread != null) {//First check to make sure thread created
-                            //mConnectedThread.write("ATE0\r\n");
-                            mConnectedThread.write("010D\r\n");
-                            SystemClock.sleep(100);
-                   }
-                   if (mConnectedThread != null) {
-                            mConnectedThread.write("010C\r\n");
-                            SystemClock.sleep(100);
-                   }
+                    if (testThread != null) {//First check to make sure thread created
+                        testThread.changeCounter();
+                    }
                 }
+
             });
 
             mScanBtn.setOnClickListener(new View.OnClickListener() {
@@ -424,9 +385,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     boolean fail = false;
-
                     BluetoothDevice device = mBTAdapter.getRemoteDevice(address);
-
                     try {
                         mBTSocket = createBluetoothSocket(device);
                     } catch (IOException e) {
@@ -456,6 +415,18 @@ public class MainActivity extends AppCompatActivity {
                 }
             }.start();
 
+            //-----------------------------------------------------------------------------------
+            // Test thread
+            //-----------------------------------------------------------------------------------
+
+
+            testThread=new TestThread();
+            testThread.start();
+
+
+            //-----------------------------------------------------------------------------------
+            // Thread that emits ELM327 command thru Bluetooth connection
+            //-----------------------------------------------------------------------------------
             new Thread() {
                 @Override
                 public void run() {
@@ -493,5 +464,17 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Could not create Insecure RFComm Connection",e);
         }
         return  device.createRfcommSocketToServiceRecord(BT_MODULE_UUID);
+    }
+
+    private void offsetButtonManager(){
+        speedOffset =0 ;
+        offset.setText(String.format("%.0f",speedOffset));
+        mSpeed.setText(String.format("%.0f",readSpeed));
+    }
+
+    private void offsetButtonManager(int val){
+         speedOffset += val ;
+         offset.setText(String.format("%.0f",speedOffset));
+         mSpeed.setText(String.format("%.0f",readSpeed));
     }
 }

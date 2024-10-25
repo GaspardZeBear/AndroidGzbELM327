@@ -16,13 +16,13 @@
             android:layout_height="match_parent"
             >
         <CheckBox
-        android:id="@+id/checkbox_led_1"
+        android:id="@+id/active"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="10dp"
         android:checked="false"
-        android:text="Toggle LED" />
+        android:text="Active" />
         </TableRow>
     </TableLayout>
 
