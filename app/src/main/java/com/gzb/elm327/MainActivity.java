@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
     private Button plusButton;
     private Button plus10Button;
     private ListView mDevicesListView;
-    private CheckBox mActive;
+    private CheckBox mPaused;
     ToggleButton[] toggleButtons;
     HashMap<ToggleButton,Integer> speeds;
     long locationChangedTimeMillis;
@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         mOffBtn = (Button)findViewById(R.id.off);
         mDiscoverBtn = (Button)findViewById(R.id.discover);
         mListPairedDevicesBtn = (Button)findViewById(R.id.paired_btn);
-        mActive = (CheckBox)findViewById(R.id.active);
+        mPaused = (CheckBox)findViewById(R.id.paused);
         minusButton=(Button)findViewById(R.id.minus);
         minus10Button=(Button)findViewById(R.id.minus10);
         zeroButton=(Button)findViewById(R.id.zero);
@@ -199,8 +199,10 @@ public class MainActivity extends AppCompatActivity {
                     ELM327Response resp=new ELM327Response(str);
                     if (resp.getPidAlias().equals("SPEED")){
                         readSpeed=resp.getPidVal();
-                        float currentSpeed = readSpeed + speedOffset  ;
-                        if (currentSpeed > maxSpeed) {
+                        float currentSpeed = readSpeed ;
+                        Log.d("MAIN","readSpeed : <" + readSpeed + "> speedOffset : <" + speedOffset + "> currentSpeed <" + currentSpeed+ "> maxSpeed <" + maxSpeed +">" );
+                        if (currentSpeed > maxSpeed + speedOffset) {
+                            Log.d("MAIN","currentSpeed > maxSpeed + speedOffset");
                             mSpeed.setTextColor(Color.RED);
                             mSpeed.setBackgroundColor(Color.rgb(200,50,50));
                             try {
@@ -242,16 +244,16 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(),getString(R.string.sBTdevNF),Toast.LENGTH_SHORT).show();
         }
         else {
-            mActive.setOnClickListener(new View.OnClickListener(){
-                //byte[] rpm={0x01,0x0C};
+            mPaused.setOnClickListener(new View.OnClickListener(){
                 @Override
-
                 public void onClick(View v){
                     if (testThread != null) {//First check to make sure thread created
                         testThread.changeCounter();
                     }
+                    if (mPollerThread != null) {
+                        mPollerThread.toggle();
+                    }
                 }
-
             });
 
             mScanBtn.setOnClickListener(new View.OnClickListener() {
@@ -290,7 +292,6 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             mBluetoothStatus.setText(getString(R.string.BTEnable));
             Toast.makeText(getApplicationContext(),getString(R.string.sBTturON),Toast.LENGTH_SHORT).show();
-
         }
         else{
             Toast.makeText(getApplicationContext(),getString(R.string.BTisON), Toast.LENGTH_SHORT).show();
