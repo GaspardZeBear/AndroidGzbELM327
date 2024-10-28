@@ -109,11 +109,13 @@ public class ELM327Response {
             Log.d("ELM327Response", "parseResponseData(): msg identified ");
             offset="010C^J010C".length();
             pid = str.substring(2, 4);
-            data=getAsciiHexaString(str.substring(offset+1));
+            if (str.length() > offset) {
+                data = getAsciiHexaString(str.substring(offset + 1));
+            }
             //ecu=data.substring(offset,offset+4);
         } else if ( str.startsWith("7E")) {
             //ecu=str.substring(0,4);
-            data=getAsciiHexaString(data);
+            data=getAsciiHexaString(str);
             pid = data.substring(6,8);
         }
         Log.d("ELM327Response", "parseResponseData(): data #" + data + "#");

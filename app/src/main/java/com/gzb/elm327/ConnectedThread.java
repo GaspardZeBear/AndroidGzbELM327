@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.*;
 
 public class ConnectedThread extends Thread {
     private final BluetoothSocket mmSocket;
@@ -18,6 +19,8 @@ public class ConnectedThread extends Thread {
     private final OutputStream mmOutStream;
     private final Handler mHandler;
     private int writeFailCounter;
+    private int writeCounter;
+    private int receiveCounter;
     private ELM327Poller emitter;
 
     public ConnectedThread(BluetoothSocket socket, Handler handler) {
@@ -26,18 +29,21 @@ public class ConnectedThread extends Thread {
         InputStream tmpIn = null;
         OutputStream tmpOut = null;
         writeFailCounter=0;
+        receiveCounter=0;
+        writeCounter=0;
 
         // Get the input and output streams, using temp objects because
         // member streams are final
         try {
             tmpIn = socket.getInputStream();
             tmpOut = socket.getOutputStream();
-        } catch (IOException e) { }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         mmInStream = tmpIn;
         mmOutStream = tmpOut;
     }
-
 
     @Override
     public void run() {
@@ -47,15 +53,23 @@ public class ConnectedThread extends Thread {
                 // Read from the InputStream
                 int bytesCount = mmInStream.available();
                 if(bytesCount != 0) {
+                    receiveCounter++;
                     byte[] buffer = new byte[1024];
                     Arrays.fill(buffer,(byte)0x00);
-                    SystemClock.sleep(1000); //pause and wait for rest of data. Adjust this depending on your sending speed.
+                    SystemClock.sleep(500); //pause and wait for rest of data. Adjust this depending on your sending speed.
                     bytesCount = mmInStream.available(); // how many bytes are ready to be read?
                     bytesCount = mmInStream.read(buffer, 0, bytesCount); // record how many bytes we actually read
                     mHandler.obtainMessage(MainActivity.MESSAGE_READ, bytesCount, -1, buffer).sendToTarget(); // Send the obtained bytes to the UI activity
                     if ( emitter != null ) {
                         emitter.post(buffer,bytesCount);
                     }
+                } else {
+                    Log.d("ConnectedThread","No available data");
+                    int sleepTime=500;
+                    if ( emitter != null && !emitter.getActive()) {
+                        sleepTime = 2000;
+                    }
+                    SystemClock.sleep(sleepTime);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -68,6 +82,14 @@ public class ConnectedThread extends Thread {
     /* Call this from the main activity to send data to the remote device */
     public void write(String input) throws Exception {
         //Log.d("WRITE","Thread WRITE value : " + input);
+        writeCounter++;
+        Log.d("ConnectedThread","writeCounter :  " + String.valueOf(writeCounter) + " receiveCounter " + String.valueOf(receiveCounter));
+
+        // ugly, but just an indication
+        if (emitter.getActive()) {
+            writeCounter=0;
+            receiveCounter=0;
+        }
         byte[] bytes = input.getBytes();           //converts entered String into bytes
         try {
             mmOutStream.write(bytes);

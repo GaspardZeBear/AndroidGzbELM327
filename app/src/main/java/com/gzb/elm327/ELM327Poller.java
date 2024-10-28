@@ -20,7 +20,7 @@ public class ELM327Poller extends Thread{
     public void initSequence() {
         write("ATZ\n",2000);
         write("ATH1\n",2000);
-        write("0100\n",10000);
+        write("0100\n",6000);
     }
 
     public void write(String str,int timer) {
@@ -74,5 +74,8 @@ public class ELM327Poller extends Thread{
     }
     public void inactivate() {
        active=false;
+    }
+    public boolean getActive() {
+        return(active);
     }
 }
