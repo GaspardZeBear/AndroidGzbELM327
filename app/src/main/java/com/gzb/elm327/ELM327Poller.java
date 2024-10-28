@@ -18,8 +18,9 @@ public class ELM327Poller extends Thread{
     }
 
     public void initSequence() {
-        write("ATZ\n",2000);
-        write("ATH1\n",2000);
+        write("ATZ\n",1000);
+        write("ATH1\n",1000);
+        write("ATE0\n",1000);
         write("0100\n",6000);
     }
 
@@ -54,9 +55,9 @@ public class ELM327Poller extends Thread{
             }
            try {
                Log.d("ELM327Poller", "Executing run() ");
-               write("010C\n",500);
-               write("010D\n",500);
-               SystemClock.sleep(500);
+               write("010C\n",1000);
+               write("010D\n",1000);
+               //SystemClock.sleep(500);
            } catch (Exception e) {
                Log.d("ELM327Poller","run() Exception " + e.getMessage());
                break;

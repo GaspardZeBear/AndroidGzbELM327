@@ -262,7 +262,7 @@
                 android:layout_weight="0.1"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="RAW:"
+                android:text=""
                 android:textStyle="bold" />
 
             <TextView

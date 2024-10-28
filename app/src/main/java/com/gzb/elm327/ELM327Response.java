@@ -12,11 +12,13 @@ public class ELM327Response {
     private String pid;
     private String pidAlias;
     private String strPidVal;
+    private String raw;
     private int pidVal;
 
     private static Map<String,String> pidHash;
     static {
         pidHash = new HashMap<>();
+        pidHash.put("00","00!");
         pidHash.put("0D","SPEED");
         pidHash.put("0C","RPM");
     }
@@ -31,6 +33,9 @@ public class ELM327Response {
 
     public String getPid() {
         return(pid);
+    }
+    public String getRaw() {
+        return(raw);
     }
 
     public String getPidAlias() {
@@ -102,35 +107,44 @@ public class ELM327Response {
 
     public void parseResponseData(String str) {
         Log.d("ELM327Response", "parseResponseData(): " + str);
-        String data="";
-        String ecu="";
-        int offset=0;
-        if ( str.startsWith("010C^J010C") || str.startsWith("010D^J010D") ) {
-            Log.d("ELM327Response", "parseResponseData(): msg identified ");
-            offset="010C^J010C".length();
-            pid = str.substring(2, 4);
-            if (str.length() > offset) {
-                data = getAsciiHexaString(str.substring(offset + 1));
-            }
-            //ecu=data.substring(offset,offset+4);
-        } else if ( str.startsWith("7E")) {
-            //ecu=str.substring(0,4);
-            data=getAsciiHexaString(str);
-            pid = data.substring(6,8);
+        // Eliminate all non hexa cars
+        //String data=getAsciiHexaString(str);
+        String data=getAsciiHexaString("010C\n\n7E8^J 03 41\n 0D 79 \n\n");
+        while (data.startsWith("010C") || data.startsWith("010D")) {
+            data=data.substring(4);
         }
+        raw=data;
+        // Data is clean, may contains some PID results (ex 7E803410D3F:7E804410C0344 (':' for readability only ! ))
+        // .. here only process the first one
+        // ate0 must have been sent
+        // Simulator : 010C^J7E..
+        // dokker : 7E8
         Log.d("ELM327Response", "parseResponseData(): data #" + data + "#");
-        if ( data.length() > 8 ) {
-            ecu=data.substring(0,3);
-            pid = data.substring(7,9);
-            strPidVal = data.substring(9);
-            Log.d("ELM327Response", "parseResponseData() will analyze  " + data + " ecu " + ecu +  " strPidVal : " + strPidVal);
-            pidVal=computePidVal(strPidVal);
-            pidAlias=ELM327Response.pidHash.get(pid);
-        } else {
+        // A least <ECU(3 chars)><length of value(2 chars)><mode : '41' (2 chars)<value (x chars), min 2 chars >
+        // Ex : 7E803410D3F : <7E8><03><41><0D><3F> : ECU 7E8, length 0, mode 41, pid 0D, value 3F
+        // So minimum 9 chars !
+        if ( data.length() < 9 ) {
             Log.d("ELM327Response", "parseResponseData() cannot analyze  " + str);
+            return;
         }
+        String mode=data.substring(5,7);
+        if (!mode.equals("41")) {
+            Log.d("ELM327Response", "parseResponseData() no consistent mode , 41 expected" + mode);
+            return;
+        }
+        String ecu=data.substring(0,3);
+        pid = data.substring(7,9);
+        String valLen=data.substring(3,5);
+        int len=2*computePidVal(valLen)-4;
+        if (data.length() < len+9) {
+            Log.d("ELM327Response", "parseResponseData() no consistent len " + str);
+            return;
+        }
+        strPidVal = data.substring(9, 9 + len);
+        Log.d("ELM327Response", "parseResponseData() will analyze  " + data + " ecu " + ecu + " len " + len + " strPidVal : " + strPidVal);
+        pidVal = computePidVal(strPidVal);
+        pidAlias = ELM327Response.pidHash.get(pid);
         Log.d("ELM327Response", "strPidVal: <"+strPidVal+">"+" pidVal <"+ String.valueOf(pidVal)+">");
     }
-
 
 }

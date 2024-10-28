@@ -206,7 +206,7 @@ public class MainActivity extends AppCompatActivity {
                     msgCount++;
                     String raw=String.valueOf(msgCount) + " " + str;
 
-                    mRaw.setText(raw);
+                    //mRaw.setText(raw);
                     String[] items=str.split(">");
                     for (String item:items) {
                         if (item.length() == 0 ) {
@@ -235,7 +235,8 @@ public class MainActivity extends AppCompatActivity {
                         } else if (resp.getPidAlias().equals("RPM")) {
                             mRpm.setText(String.valueOf(resp.getPidVal() / 4));
                         } else {
-                            mRaw.setText(String.valueOf(msgCount)  + " Unknown PID");
+                            int i=0;
+                            mRaw.setText(String.valueOf(msgCount) + "?" + resp.getRaw());
                         }
                     }
                 }
