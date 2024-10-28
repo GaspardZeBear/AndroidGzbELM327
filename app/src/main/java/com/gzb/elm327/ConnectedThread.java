@@ -18,6 +18,7 @@ public class ConnectedThread extends Thread {
     private final OutputStream mmOutStream;
     private final Handler mHandler;
     private int writeFailCounter;
+    private ELM327Poller emitter;
 
     public ConnectedThread(BluetoothSocket socket, Handler handler) {
         mmSocket = socket;
@@ -48,10 +49,13 @@ public class ConnectedThread extends Thread {
                 if(bytesCount != 0) {
                     byte[] buffer = new byte[1024];
                     Arrays.fill(buffer,(byte)0x00);
-                    SystemClock.sleep(100); //pause and wait for rest of data. Adjust this depending on your sending speed.
+                    SystemClock.sleep(1000); //pause and wait for rest of data. Adjust this depending on your sending speed.
                     bytesCount = mmInStream.available(); // how many bytes are ready to be read?
                     bytesCount = mmInStream.read(buffer, 0, bytesCount); // record how many bytes we actually read
                     mHandler.obtainMessage(MainActivity.MESSAGE_READ, bytesCount, -1, buffer).sendToTarget(); // Send the obtained bytes to the UI activity
+                    if ( emitter != null ) {
+                        emitter.post(buffer,bytesCount);
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -82,6 +86,9 @@ public class ConnectedThread extends Thread {
         }
     }
 
+    public void setEmitter(ELM327Poller emitter) {
+        this.emitter=emitter;
+    }
     /* Call this from the main activity to shutdown the connection */
     public void cancel() {
         try {

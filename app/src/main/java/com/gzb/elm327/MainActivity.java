@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView mBluetoothStatus;
     private TextView mSpeed;
     private TextView mRpm;
+    private TextView mRaw;
     private TextView offset;
     private Button mScanBtn;
     private Button mOffBtn;
@@ -74,6 +75,8 @@ public class MainActivity extends AppCompatActivity {
     float speedOffset;
     float readSpeed;
 
+    int msgCount=0;
+
     TestThread testThread;
     private BluetoothAdapter mBTAdapter;
     private Set<BluetoothDevice> mPairedDevices;
@@ -92,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
         mBluetoothStatus = (TextView)findViewById(R.id.bluetooth_status);
         mSpeed = (TextView) findViewById(R.id.speed);
         mRpm = (TextView) findViewById(R.id.rpm);
+        mRaw = (TextView) findViewById(R.id.raw);
         offset = (TextView)findViewById(R.id.offset);
         mScanBtn = (Button)findViewById(R.id.scan);
         mOffBtn = (Button)findViewById(R.id.off);
@@ -192,41 +196,55 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void handleMessage(Message msg){
                 if(msg.what == MESSAGE_READ){
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[msg.obj.toString().length()];
                     Arrays.fill(buffer,(byte)0x00);
                     buffer=(byte[])msg.obj;
-                    String str = new String(buffer, 0, buffer.length,StandardCharsets.US_ASCII);
-                    ELM327Response resp=new ELM327Response(str);
-                    if (resp.getPidAlias().equals("SPEED")){
-                        readSpeed=resp.getPidVal();
-                        float currentSpeed = readSpeed ;
-                        Log.d("MAIN","readSpeed : <" + readSpeed + "> speedOffset : <" + speedOffset + "> currentSpeed <" + currentSpeed+ "> maxSpeed <" + maxSpeed +">" );
-                        if (currentSpeed > maxSpeed + speedOffset) {
-                            Log.d("MAIN","currentSpeed > maxSpeed + speedOffset");
-                            mSpeed.setTextColor(Color.RED);
-                            mSpeed.setBackgroundColor(Color.rgb(200,50,50));
-                            try {
-                                ToneGenerator toneGen1 = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
-                                toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 150);
-                            } catch (Exception e) {
-                                Log.d("Main", "ToneGenerator: " + e.getMessage());
-                            }
-                        } else {
-                            mSpeed.setTextColor(Color.GREEN);
-                            mSpeed.setBackgroundColor(Color.rgb(0,200,50));
+                    int msgLength=msg.arg1;
+                    //String str = new String(buffer, 0, buffer.length,StandardCharsets.US_ASCII);
+                    String str = new String(buffer, 0, msgLength,StandardCharsets.US_ASCII);
+                    //String raw=str.replaceAll("[^\\{Print}]","?");
+                    msgCount++;
+                    String raw=String.valueOf(msgCount) + " " + str;
+
+                    mRaw.setText(raw);
+                    String[] items=str.split(">");
+                    for (String item:items) {
+                        if (item.length() == 0 ) {
+                            continue;
                         }
-                        mSpeed.setText(String.valueOf(resp.getPidVal()));
-                    } else if (resp.getPidAlias().equals("RPM")) {
-                        mRpm.setText(String.valueOf(resp.getPidVal()/4));
-                    } else {
-                        int i=0;
+                        ELM327Response resp = new ELM327Response(item);
+                        if (resp.getPidAlias().equals("SPEED")) {
+                            readSpeed = resp.getPidVal();
+                            float currentSpeed = readSpeed;
+                            Log.d("MAIN", "readSpeed : <" + readSpeed + "> speedOffset : <" + speedOffset + "> currentSpeed <" + currentSpeed + "> maxSpeed <" + maxSpeed + ">");
+                            if (currentSpeed > maxSpeed + speedOffset) {
+                                Log.d("MAIN", "currentSpeed > maxSpeed + speedOffset");
+                                mSpeed.setTextColor(Color.RED);
+                                mSpeed.setBackgroundColor(Color.rgb(200, 50, 50));
+                                try {
+                                    ToneGenerator toneGen1 = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
+                                    toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 150);
+                                } catch (Exception e) {
+                                    Log.d("Main", "ToneGenerator: " + e.getMessage());
+                                }
+                            } else {
+                                mSpeed.setTextColor(Color.GREEN);
+                                mSpeed.setBackgroundColor(Color.rgb(0, 200, 50));
+                            }
+                            mSpeed.setText(String.valueOf(resp.getPidVal()));
+                        } else if (resp.getPidAlias().equals("RPM")) {
+                            mRpm.setText(String.valueOf(resp.getPidVal() / 4));
+                        } else {
+                            mRaw.setText(String.valueOf(msgCount)  + " Unknown PID");
+                        }
                     }
                 }
 
                 if(msg.what == CONNECTING_STATUS){
                     char[] sConnected;
                     if(msg.arg1 == 1)
-                        mBluetoothStatus.setText(getString(R.string.BTConnected) + msg.obj);
+                        //mBluetoothStatus.setText(getString(R.string.BTConnected) + msg.obj);
+                        mBluetoothStatus.setText("Cnx : " + msg.obj);
                     else
                         mBluetoothStatus.setText(getString(R.string.BTconnFail));
                 }
