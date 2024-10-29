@@ -105,11 +105,35 @@ public class ELM327Response {
         return(total);
     }
 
+    private boolean checkModeValue(String mode) {
+        if (!mode.equals("41")) {
+            Log.d("ELM327Response", "parseResponseData() no consistent mode , expected 41 got " + mode);
+            return(false);
+        }
+        return(true);
+    }
+
+    private boolean checkEcuValue(String ecu) {
+        if (!ecu.startsWith("7")) {
+            Log.d("ELM327Response", "parseResponseData() ecu should begin with 7, got " + ecu);
+            return (false);
+        }
+        return(true);
+    }
+
+    private boolean checkMsgLength(int target, int val) {
+        if (val < target) {
+            Log.d("ELM327Response", "parseResponseData() data too short < : got " + val + " vs " + target);
+            return (false);
+        }
+        return (true);
+    }
+
     public void parseResponseData(String str) {
         Log.d("ELM327Response", "parseResponseData(): " + str);
         // Eliminate all non hexa cars
-        //String data=getAsciiHexaString(str);
-        String data=getAsciiHexaString("010C\n\n7E8^J 03 41\n 0D 79 \n\n");
+        String data=getAsciiHexaString(str);
+        //String data=getAsciiHexaString("010C\n\n7E8^J 03 41\n 0D 79 \n\n");
         while (data.startsWith("010C") || data.startsWith("010D")) {
             data=data.substring(4);
         }
@@ -123,24 +147,22 @@ public class ELM327Response {
         // A least <ECU(3 chars)><length of value(2 chars)><mode : '41' (2 chars)<value (x chars), min 2 chars >
         // Ex : 7E803410D3F : <7E8><03><41><0D><3F> : ECU 7E8, length 0, mode 41, pid 0D, value 3F
         // So minimum 9 chars !
-        if ( data.length() < 9 ) {
-            Log.d("ELM327Response", "parseResponseData() cannot analyze  " + str);
-            return;
-        }
+
+        if (!checkMsgLength(9, data.length())) return;
+
         String mode=data.substring(5,7);
-        if (!mode.equals("41")) {
-            Log.d("ELM327Response", "parseResponseData() no consistent mode , 41 expected" + mode);
-            return;
-        }
+        if (!checkModeValue(mode)) return;
+
         String ecu=data.substring(0,3);
+        if (!checkEcuValue(ecu)) return;
+
         pid = data.substring(7,9);
+
         String valLen=data.substring(3,5);
         int len=2*computePidVal(valLen)-4;
-        if (data.length() < len+9) {
-            Log.d("ELM327Response", "parseResponseData() no consistent len " + str);
-            return;
-        }
-        strPidVal = data.substring(9, 9 + len);
+        if (!checkMsgLength(len+9,data.length())) return;
+
+        strPidVal = data.substring(9, len+9);
         Log.d("ELM327Response", "parseResponseData() will analyze  " + data + " ecu " + ecu + " len " + len + " strPidVal : " + strPidVal);
         pidVal = computePidVal(strPidVal);
         pidAlias = ELM327Response.pidHash.get(pid);

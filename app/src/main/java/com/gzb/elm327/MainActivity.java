@@ -76,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
     float readSpeed;
 
     int msgCount=0;
+    private ToneGenerator toneGen1;
 
     TestThread testThread;
     private BluetoothAdapter mBTAdapter;
@@ -139,6 +140,8 @@ public class MainActivity extends AppCompatActivity {
         mDevicesListView = (ListView)findViewById(R.id.devices_list_view);
         mDevicesListView.setAdapter(mBTArrayAdapter); // assign model to view
         mDevicesListView.setOnItemClickListener(mDeviceClickListener);
+
+        toneGen1 = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
 
         // Ask for location permission if not already allowed
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
@@ -204,12 +207,13 @@ public class MainActivity extends AppCompatActivity {
                     String str = new String(buffer, 0, msgLength,StandardCharsets.US_ASCII);
                     //String raw=str.replaceAll("[^\\{Print}]","?");
                     msgCount++;
-                    String raw=String.valueOf(msgCount) + " " + str;
+                    //String raw=String.valueOf(msgCount) + " ";
 
                     //mRaw.setText(raw);
                     String[] items=str.split(">");
                     for (String item:items) {
                         if (item.length() == 0 ) {
+                            mRaw.setText(String.valueOf(msgCount) + " Empty");
                             continue;
                         }
                         ELM327Response resp = new ELM327Response(item);
@@ -222,22 +226,24 @@ public class MainActivity extends AppCompatActivity {
                                 mSpeed.setTextColor(Color.RED);
                                 mSpeed.setBackgroundColor(Color.rgb(200, 50, 50));
                                 try {
-                                    ToneGenerator toneGen1 = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
-                                    toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 150);
+                                    //ToneGenerator toneGen1 = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
+                                    toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 1500);
                                 } catch (Exception e) {
                                     Log.d("Main", "ToneGenerator: " + e.getMessage());
                                 }
                             } else {
                                 mSpeed.setTextColor(Color.GREEN);
                                 mSpeed.setBackgroundColor(Color.rgb(0, 200, 50));
+                                toneGen1.stopTone();
                             }
                             mSpeed.setText(String.valueOf(resp.getPidVal()));
                         } else if (resp.getPidAlias().equals("RPM")) {
                             mRpm.setText(String.valueOf(resp.getPidVal() / 4));
                         } else {
                             int i=0;
-                            mRaw.setText(String.valueOf(msgCount) + "?" + resp.getRaw());
+
                         }
+                        mRaw.setText(String.valueOf(msgCount) + "?" + resp.getRaw());
                     }
                 }
 
