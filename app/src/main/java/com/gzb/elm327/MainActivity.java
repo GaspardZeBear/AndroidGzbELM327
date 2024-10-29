@@ -51,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private final static int CONNECTING_STATUS = 3; // used in bluetooth handler to identify message status
     public final static int MESSAGE_WRITE_FAILED = -1; // used in bluetooth handler to identify message status
 
+    public MainActivity mainActivity;
     // GUI Components
     private TextView mBluetoothStatus;
     private TextView mSpeed;
@@ -88,10 +89,14 @@ public class MainActivity extends AppCompatActivity {
     private ELM327Poller mPollerThread;
     private BluetoothSocket mBTSocket = null; // bi-directional client-to-client data path
 
+    public void setRaw(String msg) {
+        mRaw.setText(msg);
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mainActivity=this;
 
         mBluetoothStatus = (TextView)findViewById(R.id.bluetooth_status);
         mSpeed = (TextView) findViewById(R.id.speed);
@@ -441,14 +446,14 @@ public class MainActivity extends AppCompatActivity {
                         // Starts the thread will will emit ELM327 commands
                         mPollerThread=new ELM327Poller(mConnectedThread);
                         mPollerThread.start();
-                                            }
+                    }
                 }
             }.start();
 
             //-----------------------------------------------------------------------------------
             // Test thread
             //-----------------------------------------------------------------------------------
-            testThread=new TestThread();
+            //testThread=new TestThread(mainActivity);
             //testThread.start();
         }
     };

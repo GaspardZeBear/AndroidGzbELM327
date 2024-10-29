@@ -4,6 +4,7 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class ELM327Poller extends Thread{
     private ConnectedThread mConnectedThread;
@@ -18,13 +19,19 @@ public class ELM327Poller extends Thread{
     }
 
     public void initSequence() {
-        write("ATZ\n",1000);
-        write("ATH1\n",1000);
-        write("ATE0\n",1000);
-        write("0100\n",6000);
+        write("ATZ\r\n",1000);
+        write("ATH1\r\n",1000);
+        write("ATE0\r\n",1000);
+        write("0100\r\n",6000);
     }
 
-    public void write(String str,int timer) {
+    public void write(String str0,int timer) {
+        byte[] ascii = str0.getBytes(StandardCharsets.US_ASCII);
+        String asciiString = Arrays.toString(ascii);
+
+        Log.d("ELM327Poller", "Ascii :  <" + asciiString + ">");
+
+        String str=new String(ascii,StandardCharsets.US_ASCII);
         if (mConnectedThread != null) {
             try {
                 Log.d("ELM327Poller", " write() data  " + str);
@@ -55,8 +62,8 @@ public class ELM327Poller extends Thread{
             }
            try {
                Log.d("ELM327Poller", "Executing run() ");
-               write("010C\n",1000);
-               write("010D\n",1000);
+               write("010C\r\n",1000);
+               write("010D\r\n",1000);
                //SystemClock.sleep(500);
            } catch (Exception e) {
                Log.d("ELM327Poller","run() Exception " + e.getMessage());

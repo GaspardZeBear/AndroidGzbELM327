@@ -87,10 +87,11 @@ public class ConnectedThread extends Thread {
 
         // ugly, but just an indication
         if (emitter.getActive()) {
-            writeCounter=0;
-            receiveCounter=0;
+            writeCounter+=0;
+            receiveCounter+=0;
         }
-        byte[] bytes = input.getBytes();           //converts entered String into bytes
+        //byte[] bytes = input.getBytes();
+        byte[] bytes = input.getBytes(StandardCharsets.US_ASCII); // converts entered String into bytes
         try {
             mmOutStream.write(bytes);
             if (writeFailCounter > 0) {
