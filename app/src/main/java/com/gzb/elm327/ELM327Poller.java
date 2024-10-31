@@ -57,6 +57,7 @@ public class ELM327Poller extends Thread{
         while (true) {
             if (!active) {
                 Log.d("ELM327Poller", "Inactive");
+                mConnectedThread.sendFake();
                 SystemClock.sleep(5000);
                 continue;
             }
@@ -75,6 +76,9 @@ public class ELM327Poller extends Thread{
 
     public void toggle() {
         active=!active;
+        if (!active) {
+            mConnectedThread.sendFake();
+        }
     }
 
     public void activate() {

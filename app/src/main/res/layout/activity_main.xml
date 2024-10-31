@@ -313,26 +313,26 @@
         android:id="@+id/off"
         android:layout_width="50dp"
         android:layout_height="wrap_content"
-        android:text="BT OFF" />
+        android:text="OFF" />
 
         <Button
         android:id="@+id/scan"
         android:layout_width="50dp"
         android:layout_height="wrap_content"
-        android:text="BT ON" />
+        android:text="ON" />
 
         <Button
         android:id="@+id/paired_btn"
         android:layout_width="50dp"
         android:layout_height="wrap_content"
-        android:text="Paired" />
+        android:text="Dev" />
 
         <Button
         android:id="@+id/discover"
         android:layout_width="50dp"
         android:layout_height="wrap_content"
-        android:text="Discover" />
-        </TableRow>
+        android:text="Find" />
+      </TableRow>
     </TableLayout>
 
     <ListView

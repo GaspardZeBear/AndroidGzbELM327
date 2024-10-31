@@ -67,7 +67,7 @@ public class ConnectedThread extends Thread {
                     Log.d("ConnectedThread","No available data");
                     int sleepTime=500;
                     if ( emitter != null && !emitter.getActive()) {
-                        sleepTime = 2000;
+                        sleepTime = 5000;
                     }
                     SystemClock.sleep(sleepTime);
                 }
@@ -112,6 +112,14 @@ public class ConnectedThread extends Thread {
     public void setEmitter(ELM327Poller emitter) {
         this.emitter=emitter;
     }
+
+    public void sendFake() {
+        byte[] fakeRpm = "7E804410C0000".getBytes(StandardCharsets.US_ASCII);
+        byte[] fakeSpeed = "7E803410D00".getBytes(StandardCharsets.US_ASCII);
+        mHandler.obtainMessage(MainActivity.MESSAGE_READ, fakeSpeed.length, -1, fakeSpeed).sendToTarget();
+        mHandler.obtainMessage(MainActivity.MESSAGE_READ, fakeRpm.length, -1, fakeRpm).sendToTarget();
+    }
+
     /* Call this from the main activity to shutdown the connection */
     public void cancel() {
         try {

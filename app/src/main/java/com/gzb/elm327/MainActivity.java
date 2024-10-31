@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Bundle;
@@ -21,6 +22,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -100,7 +102,10 @@ public class MainActivity extends AppCompatActivity {
 
         mBluetoothStatus = (TextView)findViewById(R.id.bluetooth_status);
         mSpeed = (TextView) findViewById(R.id.speed);
+        mSpeed.setGravity(Gravity.CENTER);
+        mSpeed.setWidth(100);
         mRpm = (TextView) findViewById(R.id.rpm);
+        mRpm.setWidth(100);
         mRaw = (TextView) findViewById(R.id.raw);
         offset = (TextView)findViewById(R.id.offset);
         mScanBtn = (Button)findViewById(R.id.scan);
@@ -136,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
         speeds.put((ToggleButton)findViewById(R.id.s120),120);
         speeds.put((ToggleButton)findViewById(R.id.s130),130);
 
+        toggleButtons[1].setBackgroundColor(Color.YELLOW);
         maxSpeed=50;
         readSpeed=0;
 
@@ -204,51 +210,59 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void handleMessage(Message msg){
                 if(msg.what == MESSAGE_READ){
-                    byte[] buffer = new byte[msg.obj.toString().length()];
-                    Arrays.fill(buffer,(byte)0x00);
-                    buffer=(byte[])msg.obj;
-                    int msgLength=msg.arg1;
-                    //String str = new String(buffer, 0, buffer.length,StandardCharsets.US_ASCII);
-                    String str = new String(buffer, 0, msgLength,StandardCharsets.US_ASCII);
-                    //String raw=str.replaceAll("[^\\{Print}]","?");
-                    msgCount++;
-                    //String raw=String.valueOf(msgCount) + " ";
+                    if (mPollerThread != null && !mPollerThread.getActive())  {
+                        mSpeed.setTextColor(Color.GRAY);
+                        mSpeed.setTypeface(null, Typeface.BOLD);
+                        mSpeed.setBackgroundColor(Color.BLACK);
+                        mSpeed.setText("Off");
+                        mRpm.setTextColor(Color.GRAY);
+                        mRpm.setTypeface(null, Typeface.BOLD);
+                        //mRpm.setBackgroundColor(Color.BLACK);
+                        mRpm.setText("Off");
 
-                    //mRaw.setText(raw);
-                    String[] items=str.split(">");
-                    for (String item:items) {
-                        if (item.length() == 0 ) {
-                            mRaw.setText(String.valueOf(msgCount) + " Empty");
-                            continue;
-                        }
-                        ELM327Response resp = new ELM327Response(item);
-                        if (resp.getPidAlias().equals("SPEED")) {
-                            readSpeed = resp.getPidVal();
-                            float currentSpeed = readSpeed;
-                            Log.d("MAIN", "readSpeed : <" + readSpeed + "> speedOffset : <" + speedOffset + "> currentSpeed <" + currentSpeed + "> maxSpeed <" + maxSpeed + ">");
-                            if (currentSpeed > maxSpeed + speedOffset) {
-                                Log.d("MAIN", "currentSpeed > maxSpeed + speedOffset");
-                                mSpeed.setTextColor(Color.RED);
-                                mSpeed.setBackgroundColor(Color.rgb(200, 50, 50));
-                                try {
-                                    //ToneGenerator toneGen1 = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
-                                    toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 1500);
-                                } catch (Exception e) {
-                                    Log.d("Main", "ToneGenerator: " + e.getMessage());
-                                }
-                            } else {
-                                mSpeed.setTextColor(Color.GREEN);
-                                mSpeed.setBackgroundColor(Color.rgb(0, 200, 50));
-                                toneGen1.stopTone();
+                    } else {
+                        byte[] buffer = new byte[msg.obj.toString().length()];
+                        Arrays.fill(buffer, (byte) 0x00);
+                        buffer = (byte[]) msg.obj;
+                        int msgLength = msg.arg1;
+                        String str = new String(buffer, 0, msgLength, StandardCharsets.US_ASCII);
+                        msgCount++;
+                        String[] items = str.split(">");
+                        for (String item : items) {
+                            if (item.length() == 0) {
+                                mRaw.setText(String.valueOf(msgCount) + " Empty");
+                                continue;
                             }
-                            mSpeed.setText(String.valueOf(resp.getPidVal()));
-                        } else if (resp.getPidAlias().equals("RPM")) {
-                            mRpm.setText(String.valueOf(resp.getPidVal() / 4));
-                        } else {
-                            int i=0;
+                            ELM327Response resp = new ELM327Response(item);
+                            if (resp.getPidAlias().equals("SPEED")) {
+                                readSpeed = resp.getPidVal();
+                                float currentSpeed = readSpeed;
+                                Log.d("MAIN", "readSpeed : <" + readSpeed + "> speedOffset : <" + speedOffset + "> currentSpeed <" + currentSpeed + "> maxSpeed <" + maxSpeed + ">");
+                                if (currentSpeed > maxSpeed + speedOffset) {
+                                    Log.d("MAIN", "currentSpeed > maxSpeed + speedOffset");
+                                    mSpeed.setTextColor(Color.BLACK);
+                                    mSpeed.setBackgroundColor(Color.RED);
+                                    try {
+                                        toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 1500);
+                                    } catch (Exception e) {
+                                        Log.d("Main", "ToneGenerator: " + e.getMessage());
+                                    }
+                                } else {
+                                    mSpeed.setTextColor(Color.BLACK);
+                                    mSpeed.setTypeface(null, Typeface.BOLD);
+                                    mSpeed.setBackgroundColor(Color.rgb(0, 255, 0));
+                                    //
+                                    toneGen1.stopTone();
+                                }
+                                mSpeed.setText(String.valueOf(resp.getPidVal()));
+                            } else if (resp.getPidAlias().equals("RPM")) {
+                                mRpm.setText(String.valueOf(resp.getPidVal() / 4));
+                            } else {
+                                int i = 0;
 
+                            }
+                            mRaw.setText(String.valueOf(msgCount) + "?" + resp.getRaw());
                         }
-                        mRaw.setText(String.valueOf(msgCount) + "?" + resp.getRaw());
                     }
                 }
 
@@ -423,11 +437,14 @@ public class MainActivity extends AppCompatActivity {
                     } catch (IOException e) {
                         fail = true;
                         Toast.makeText(getBaseContext(), getString(R.string.ErrSockCrea), Toast.LENGTH_SHORT).show();
+                        Log.d("Main","Create BT Exception " + e.getMessage());
                     }
                     // Establish the Bluetooth socket connection.
+                    Log.d("Main","BT Socket created ");
                     try {
                         mBTSocket.connect();
                     } catch (IOException e) {
+                        Log.d("Main","BT Socket connect Exception " + e.getMessage());
                         try {
                             fail = true;
                             mBTSocket.close();
@@ -436,6 +453,7 @@ public class MainActivity extends AppCompatActivity {
                         } catch (IOException e2) {
                             //insert code to deal with this
                             Toast.makeText(getBaseContext(), getString(R.string.ErrSockCrea), Toast.LENGTH_SHORT).show();
+                            Log.d("Main","Close BT Exception " + e2.getMessage());
                         }
                     }
                     if(!fail) {
