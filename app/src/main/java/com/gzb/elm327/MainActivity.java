@@ -17,7 +17,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -50,7 +49,9 @@ public class MainActivity extends AppCompatActivity {
     // #defines for identifying shared types between calling functions
     private final static int REQUEST_ENABLE_BT = 1; // used to identify adding bluetooth names
     public final static int MESSAGE_READ = 2; // used in bluetooth handler to identify message update
-    private final static int CONNECTING_STATUS = 3; // used in bluetooth handler to identify message status
+    public final static int CONNECTING_STATUS = 3; // used in bluetooth handler to identify message status
+    public final static int TOAST = 4; //
+    public final static int BTSTATUS = 5; //
     public final static int MESSAGE_WRITE_FAILED = -1; // used in bluetooth handler to identify message status
 
     public MainActivity mainActivity;
@@ -70,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private Button plusButton;
     private Button plus10Button;
     private ListView mDevicesListView;
+    private ListView xDevicesListView;
     private CheckBox mPaused;
     ToggleButton[] toggleButtons;
     HashMap<ToggleButton,Integer> speeds;
@@ -81,7 +83,6 @@ public class MainActivity extends AppCompatActivity {
     int msgCount=0;
     private ToneGenerator toneGen1;
 
-    TestThread testThread;
     private BluetoothAdapter mBTAdapter;
     private Set<BluetoothDevice> mPairedDevices;
     private ArrayAdapter<String> mBTArrayAdapter;
@@ -89,6 +90,9 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler; // Our main handler that will receive callback notifications
     private ConnectedThread mConnectedThread; // bluetooth background worker thread to send and receive data
     private ELM327Poller mPollerThread;
+
+    public ELM327Launcher elm327Launcher;
+    public String btInfo;
     private BluetoothSocket mBTSocket = null; // bi-directional client-to-client data path
 
     public void setRaw(String msg) {
@@ -279,6 +283,12 @@ public class MainActivity extends AppCompatActivity {
                     mSpeed.setBackgroundColor(Color.rgb(255,125,50));
                     mSpeed.setText(String.valueOf(-1));
                 }
+                if (msg.what == TOAST) {
+                    Toast.makeText(getBaseContext(), (String)msg.obj , Toast.LENGTH_SHORT).show();
+                }
+                if (msg.what == BTSTATUS) {
+                    mBluetoothStatus.setText("Connecting " +  msg.obj);
+                }
             }
         };
 
@@ -291,12 +301,16 @@ public class MainActivity extends AppCompatActivity {
             mPaused.setOnClickListener(new View.OnClickListener(){
                 @Override
                 public void onClick(View v){
-                    if (testThread != null) {//First check to make sure thread created
-                        testThread.changeCounter();
+                    if ( elm327Launcher != null) {//First check to make sure thread created
+                        elm327Launcher.stopThreads();
+                        elm327Launcher = null;
+                    } else {
+                        elm327Launcher=new ELM327Launcher(mainActivity,btInfo,mBTAdapter,mHandler);
+                        elm327Launcher.start();
                     }
-                    if (mPollerThread != null) {
-                        mPollerThread.toggle();
-                    }
+                    //if (mPollerThread != null) {
+                    //    mPollerThread.toggle();
+                    //}
                 }
             });
 
@@ -419,64 +433,18 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(getBaseContext(), getString(R.string.BTnotOn), Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            mBluetoothStatus.setText(getString(R.string.cConnet));
-            // Get the device MAC address, which is the last 17 chars in the View
-            String info = ((TextView) view).getText().toString();
-            final String address = info.substring(info.length() - 17);
-            final String name = info.substring(0,info.length() - 17);
-
-            // Spawn a new thread to avoid blocking the GUI one
-            new Thread() {
-                @Override
-                public void run() {
-                    boolean fail = false;
-                    BluetoothDevice device = mBTAdapter.getRemoteDevice(address);
-                    try {
-                        mBTSocket = createBluetoothSocket(device);
-                    } catch (IOException e) {
-                        fail = true;
-                        Toast.makeText(getBaseContext(), getString(R.string.ErrSockCrea), Toast.LENGTH_SHORT).show();
-                        Log.d("Main","Create BT Exception " + e.getMessage());
-                    }
-                    // Establish the Bluetooth socket connection.
-                    Log.d("Main","BT Socket created ");
-                    try {
-                        mBTSocket.connect();
-                    } catch (IOException e) {
-                        Log.d("Main","BT Socket connect Exception " + e.getMessage());
-                        try {
-                            fail = true;
-                            mBTSocket.close();
-                            mHandler.obtainMessage(CONNECTING_STATUS, -1, -1)
-                                    .sendToTarget();
-                        } catch (IOException e2) {
-                            //insert code to deal with this
-                            Toast.makeText(getBaseContext(), getString(R.string.ErrSockCrea), Toast.LENGTH_SHORT).show();
-                            Log.d("Main","Close BT Exception " + e2.getMessage());
-                        }
-                    }
-                    if(!fail) {
-                        mConnectedThread = new ConnectedThread(mBTSocket, mHandler);
-                        mConnectedThread.start();
-                        mHandler.obtainMessage(CONNECTING_STATUS, 1, -1, name)
-                                .sendToTarget();
-                        // Starts the thread will will emit ELM327 commands
-                        mPollerThread=new ELM327Poller(mConnectedThread);
-                        mPollerThread.start();
-                    }
-                }
-            }.start();
-
-            //-----------------------------------------------------------------------------------
-            // Test thread
-            //-----------------------------------------------------------------------------------
-            //testThread=new TestThread(mainActivity);
-            //testThread.start();
-        }
+            //String info = ((TextView) view).getText().toString();
+            //final String address = info.substring(info.length() - 17);
+            //final String name = info.substring(0,info.length() - 17);
+            btInfo=((TextView) view).getText().toString();
+            elm327Launcher=new ELM327Launcher(mainActivity,btInfo,mBTAdapter,mHandler);
+            elm327Launcher.start();
+            }
     };
 
-    private BluetoothSocket createBluetoothSocket(BluetoothDevice device) throws IOException {
+
+
+    private BluetoothSocket XcreateBluetoothSocket(BluetoothDevice device) throws IOException {
         try {
             final Method m = device.getClass().getMethod("createInsecureRfcommSocketToServiceRecord", UUID.class);
             return (BluetoothSocket) m.invoke(device, BT_MODULE_UUID);

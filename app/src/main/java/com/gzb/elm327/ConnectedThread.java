@@ -7,6 +7,7 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.nio.charset.StandardCharsets;
@@ -48,35 +49,40 @@ public class ConnectedThread extends Thread {
     @Override
     public void run() {
         // Keep listening to the InputStream until an exception occurs
-        while (true) {
+        //while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             try {
                 // Read from the InputStream
                 int bytesCount = mmInStream.available();
-                if(bytesCount != 0) {
+                if (bytesCount != 0) {
                     receiveCounter++;
                     byte[] buffer = new byte[1024];
-                    Arrays.fill(buffer,(byte)0x00);
+                    Arrays.fill(buffer, (byte) 0x00);
                     SystemClock.sleep(500); //pause and wait for rest of data. Adjust this depending on your sending speed.
                     bytesCount = mmInStream.available(); // how many bytes are ready to be read?
                     bytesCount = mmInStream.read(buffer, 0, bytesCount); // record how many bytes we actually read
                     mHandler.obtainMessage(MainActivity.MESSAGE_READ, bytesCount, -1, buffer).sendToTarget(); // Send the obtained bytes to the UI activity
-                    if ( emitter != null ) {
-                        emitter.post(buffer,bytesCount);
+                    if (emitter != null) {
+                        emitter.post(buffer, bytesCount);
                     }
                 } else {
-                    Log.d("ConnectedThread","No available data");
-                    int sleepTime=500;
-                    if ( emitter != null && !emitter.getActive()) {
+                    Log.d("ConnectedThread", "No available data");
+                    int sleepTime = 500;
+                    if (emitter != null && !emitter.getActive()) {
                         sleepTime = 5000;
                     }
                     SystemClock.sleep(sleepTime);
                 }
+            } catch (InterruptedIOException eInt) {
+                Log.d("ConnectedThread", "Interrupted");
+                break;
             } catch (IOException e) {
                 e.printStackTrace();
                 break;
             }
+
         }
-        Log.d("ConnectedThread","Broke run() ");
+        Log.d("ConnectedThread", "Broke run() ");
     }
 
     /* Call this from the main activity to send data to the remote device */

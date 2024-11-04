@@ -3,6 +3,7 @@ package com.gzb.elm327;
 import android.os.SystemClock;
 import android.util.Log;
 
+import java.io.InterruptedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -54,22 +55,24 @@ public class ELM327Poller extends Thread{
     public void run() {
         boolean fail = false;
         initSequence();
-        while (true) {
+        //while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             if (!active) {
-                Log.d("ELM327Poller", "Inactive");
-                mConnectedThread.sendFake();
-                SystemClock.sleep(5000);
-                continue;
+                    Log.d("ELM327Poller", "Inactive");
+                    //mConnectedThread.sendFake();
+                    SystemClock.sleep(5000);
+                    continue;
+             }
+            try {
+                    Log.d("ELM327Poller", "Executing run() ");
+                    write("010C\r\n", 1000);
+                    write("010D\r\n", 1000);
+                    // write("010D0C\r\n", 1000);
+                    //SystemClock.sleep(500);
+            }  catch (Exception e) {
+                    Log.d("ELM327Poller","run() Exception " + e.getMessage());
+                    break;
             }
-           try {
-               Log.d("ELM327Poller", "Executing run() ");
-               write("010C\r\n",1000);
-               write("010D\r\n",1000);
-               //SystemClock.sleep(500);
-           } catch (Exception e) {
-               Log.d("ELM327Poller","run() Exception " + e.getMessage());
-               break;
-           }
         }
         Log.d("ELM327Poller","Exiting run() ");
     };
@@ -77,7 +80,7 @@ public class ELM327Poller extends Thread{
     public void toggle() {
         active=!active;
         if (!active) {
-            mConnectedThread.sendFake();
+            //mConnectedThread.sendFake();
         }
     }
 
