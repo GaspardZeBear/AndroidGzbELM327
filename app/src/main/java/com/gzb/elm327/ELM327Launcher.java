@@ -46,10 +46,13 @@ public class ELM327Launcher extends Thread {
 
     @Override
     public void run() {
-        //this.mainActivity.setmBluetoothStatusText("Connecting");
         // Get the device MAC address, which is the last 17 chars in the View
         Log.d("ELM327Launcher","run method called" );
-        //String info = ((TextView) view).getText().toString();
+        if ( btInfo == null || btInfo.length() < 17 ) {
+            mHandler.obtainMessage(BTSTATUS, -1, -1,"No device selected ")
+                    .sendToTarget();
+            return;
+        }
         final String address = btInfo.substring(btInfo.length() - 17);
         final String btName = btInfo.substring(0,btInfo.length() - 17);
         mHandler.obtainMessage(BTSTATUS, -1, -1,"Try " + btName)
@@ -64,7 +67,6 @@ public class ELM327Launcher extends Thread {
                 mBTSocket = createBluetoothSocket(device);
             } catch (IOException e) {
                 fail = true;
-                //Toast.makeText(getBaseContext(), getString(R.string.ErrSockCrea), Toast.LENGTH_SHORT).show();
                 mHandler.obtainMessage(CONNECTING_STATUS, -1, -1)
                         .sendToTarget();
                 Log.d("Main","Create BT Exception " + e.getMessage());
@@ -134,12 +136,6 @@ public class ELM327Launcher extends Thread {
             SystemClock.sleep(5000);
         }
     }
-
-    public void incrementCounter() {
-        counter++;
-        Log.d("EML327Launcher ", "Executing : counter" + String.valueOf(counter));
-    }
-
 
     public void stopThreads() {
         counter++;

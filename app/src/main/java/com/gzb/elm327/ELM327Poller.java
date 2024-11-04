@@ -19,14 +19,14 @@ public class ELM327Poller extends Thread{
         activate();
     }
 
-    public void initSequence() {
+    public void initSequence() throws Exception {
         write("ATZ\r\n",1000);
         write("ATH1\r\n",1000);
         write("ATE0\r\n",1000);
         write("0100\r\n",6000);
     }
 
-    public void write(String str0,int timer) {
+    public void write(String str0,int timer) throws Exception {
         byte[] ascii = str0.getBytes(StandardCharsets.US_ASCII);
         String asciiString = Arrays.toString(ascii);
 
@@ -39,6 +39,7 @@ public class ELM327Poller extends Thread{
                 mConnectedThread.write(str);
             } catch (Exception e) {
                 Log.d("ELM327Poller", " write() Exception " + e.getMessage());
+                throw new Exception(e);
             };
         } else {
             Log.d("ELM327Poller", "Not connected");
@@ -54,9 +55,13 @@ public class ELM327Poller extends Thread{
 
     public void run() {
         boolean fail = false;
-        initSequence();
+        try {
+            initSequence();
+        } catch ( Exception e ) {
+            fail=true;
+        }
         //while (true) {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (!Thread.currentThread().isInterrupted() && !fail) {
             if (!active) {
                     Log.d("ELM327Poller", "Inactive");
                     //mConnectedThread.sendFake();
@@ -71,6 +76,7 @@ public class ELM327Poller extends Thread{
                     //SystemClock.sleep(500);
             }  catch (Exception e) {
                     Log.d("ELM327Poller","run() Exception " + e.getMessage());
+                    fail=true;
                     break;
             }
         }

@@ -103,11 +103,12 @@ public class ConnectedThread extends Thread {
             if (writeFailCounter > 0) {
                 writeFailCounter--;
             }
-        } catch (IOException e) {
-            mHandler.obtainMessage(MainActivity.MESSAGE_WRITE_FAILED, "Failed").sendToTarget();
+            //} catch (IOException e) {
+        } catch (Exception e) {
+            //mHandler.obtainMessage(MainActivity.MESSAGE_WRITE_FAILED, "Failed").sendToTarget();
             writeFailCounter++;
             Log.d("ConnectedThread","Write failed :  " + e.getMessage());
-            if (writeFailCounter > 10 ) {
+            if (writeFailCounter > 5 ) {
                 Log.d("ConnectedThread","Write failed cancel  ");
                 cancel();
                 throw new Exception("Socket closed");
@@ -119,16 +120,10 @@ public class ConnectedThread extends Thread {
         this.emitter=emitter;
     }
 
-    public void sendFake() {
-        byte[] fakeRpm = "7E804410C0000".getBytes(StandardCharsets.US_ASCII);
-        byte[] fakeSpeed = "7E803410D00".getBytes(StandardCharsets.US_ASCII);
-        mHandler.obtainMessage(MainActivity.MESSAGE_READ, fakeSpeed.length, -1, fakeSpeed).sendToTarget();
-        mHandler.obtainMessage(MainActivity.MESSAGE_READ, fakeRpm.length, -1, fakeRpm).sendToTarget();
-    }
-
-    /* Call this from the main activity to shutdown the connection */
+        /* Call this from the main activity to shutdown the connection */
     public void cancel() {
         try {
+            Log.d("ConnectedThread","Close socket");
             mmSocket.close();
         } catch (IOException e) {
             Log.d("ConnectedThread","Close socket failed :  " + e.getMessage());

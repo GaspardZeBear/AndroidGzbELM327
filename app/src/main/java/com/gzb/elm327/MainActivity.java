@@ -184,7 +184,6 @@ public class MainActivity extends AppCompatActivity {
             });
         };
 
-
         plusButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {offsetButtonManager(1);};
@@ -213,81 +212,31 @@ public class MainActivity extends AppCompatActivity {
         mHandler = new Handler(Looper.getMainLooper()){
             @Override
             public void handleMessage(Message msg){
-                if(msg.what == MESSAGE_READ){
-                    if (mPollerThread != null && !mPollerThread.getActive())  {
-                        mSpeed.setTextColor(Color.GRAY);
-                        mSpeed.setTypeface(null, Typeface.BOLD);
-                        mSpeed.setBackgroundColor(Color.BLACK);
-                        mSpeed.setText("Off");
-                        mRpm.setTextColor(Color.GRAY);
-                        mRpm.setTypeface(null, Typeface.BOLD);
-                        //mRpm.setBackgroundColor(Color.BLACK);
-                        mRpm.setText("Off");
-
-                    } else {
-                        byte[] buffer = new byte[msg.obj.toString().length()];
-                        Arrays.fill(buffer, (byte) 0x00);
-                        buffer = (byte[]) msg.obj;
-                        int msgLength = msg.arg1;
-                        String str = new String(buffer, 0, msgLength, StandardCharsets.US_ASCII);
-                        msgCount++;
-                        String[] items = str.split(">");
-                        for (String item : items) {
-                            if (item.length() == 0) {
-                                mRaw.setText(String.valueOf(msgCount) + " Empty");
-                                continue;
-                            }
-                            ELM327Response resp = new ELM327Response(item);
-                            if (resp.getPidAlias().equals("SPEED")) {
-                                readSpeed = resp.getPidVal();
-                                float currentSpeed = readSpeed;
-                                Log.d("MAIN", "readSpeed : <" + readSpeed + "> speedOffset : <" + speedOffset + "> currentSpeed <" + currentSpeed + "> maxSpeed <" + maxSpeed + ">");
-                                if (currentSpeed > maxSpeed + speedOffset) {
-                                    Log.d("MAIN", "currentSpeed > maxSpeed + speedOffset");
-                                    mSpeed.setTextColor(Color.BLACK);
-                                    mSpeed.setBackgroundColor(Color.RED);
-                                    try {
-                                        toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 1500);
-                                    } catch (Exception e) {
-                                        Log.d("Main", "ToneGenerator: " + e.getMessage());
-                                    }
-                                } else {
-                                    mSpeed.setTextColor(Color.BLACK);
-                                    mSpeed.setTypeface(null, Typeface.BOLD);
-                                    mSpeed.setBackgroundColor(Color.rgb(0, 255, 0));
-                                    //
-                                    toneGen1.stopTone();
-                                }
-                                mSpeed.setText(String.valueOf(resp.getPidVal()));
-                            } else if (resp.getPidAlias().equals("RPM")) {
-                                mRpm.setText(String.valueOf(resp.getPidVal() / 4));
-                            } else {
-                                int i = 0;
-
-                            }
-                            mRaw.setText(String.valueOf(msgCount) + "?" + resp.getRaw());
-                        }
-                    }
-                }
-
-                if(msg.what == CONNECTING_STATUS){
-                    char[] sConnected;
-                    if(msg.arg1 == 1)
+                switch(msg.what) {
+                    case MESSAGE_READ :
+                        handlerMessageProcessor(msg);
+                        break;
+                    case CONNECTING_STATUS :
+                        char[] sConnected;
+                        if(msg.arg1 == 1)
                         //mBluetoothStatus.setText(getString(R.string.BTConnected) + msg.obj);
-                        mBluetoothStatus.setText("Cnx : " + msg.obj);
-                    else
-                        mBluetoothStatus.setText(getString(R.string.BTconnFail));
-                }
-
-                if (msg.what == MESSAGE_WRITE_FAILED) {
-                    mSpeed.setBackgroundColor(Color.rgb(255,125,50));
-                    mSpeed.setText(String.valueOf(-1));
-                }
-                if (msg.what == TOAST) {
-                    Toast.makeText(getBaseContext(), (String)msg.obj , Toast.LENGTH_SHORT).show();
-                }
-                if (msg.what == BTSTATUS) {
-                    mBluetoothStatus.setText("Connecting " +  msg.obj);
+                            mBluetoothStatus.setText("Cnx : " + msg.obj);
+                        else
+                            mBluetoothStatus.setText(getString(R.string.BTconnFail));
+                        break;
+                    case MESSAGE_WRITE_FAILED :
+                        //mSpeed.setBackgroundColor(Color.rgb(255,125,50));
+                        //mSpeed.setText(String.valueOf(-1));
+                        nullifySpeedAndRpm(null);
+                        break ;
+                    case TOAST :
+                        Toast.makeText(getBaseContext(), (String)msg.obj , Toast.LENGTH_SHORT).show();
+                        break;
+                    case BTSTATUS :
+                        mBluetoothStatus.setText((String)msg.obj);
+                        break;
+                    default:
+                        Log.d("Main"," handler unknown message : " + (String)msg.obj );
                 }
             }
         };
@@ -304,13 +253,11 @@ public class MainActivity extends AppCompatActivity {
                     if ( elm327Launcher != null) {//First check to make sure thread created
                         elm327Launcher.stopThreads();
                         elm327Launcher = null;
+                        nullifySpeedAndRpm(null);
                     } else {
                         elm327Launcher=new ELM327Launcher(mainActivity,btInfo,mBTAdapter,mHandler);
                         elm327Launcher.start();
                     }
-                    //if (mPollerThread != null) {
-                    //    mPollerThread.toggle();
-                    //}
                 }
             });
 
@@ -383,15 +330,13 @@ public class MainActivity extends AppCompatActivity {
         if(mBTAdapter.isDiscovering()){
             mBTAdapter.cancelDiscovery();
             Toast.makeText(getApplicationContext(),getString(R.string.DisStop),Toast.LENGTH_SHORT).show();
-        }
-        else{
+        } else {
             if(mBTAdapter.isEnabled()) {
                 mBTArrayAdapter.clear(); // clear items
                 mBTAdapter.startDiscovery();
                 Toast.makeText(getApplicationContext(), getString(R.string.DisStart), Toast.LENGTH_SHORT).show();
                 registerReceiver(blReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
-            }
-            else{
+            } else {
                 Toast.makeText(getApplicationContext(), getString(R.string.BTnotOn), Toast.LENGTH_SHORT).show();
             }
         }
@@ -433,26 +378,11 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(getBaseContext(), getString(R.string.BTnotOn), Toast.LENGTH_SHORT).show();
                 return;
             }
-            //String info = ((TextView) view).getText().toString();
-            //final String address = info.substring(info.length() - 17);
-            //final String name = info.substring(0,info.length() - 17);
             btInfo=((TextView) view).getText().toString();
             elm327Launcher=new ELM327Launcher(mainActivity,btInfo,mBTAdapter,mHandler);
             elm327Launcher.start();
             }
     };
-
-
-
-    private BluetoothSocket XcreateBluetoothSocket(BluetoothDevice device) throws IOException {
-        try {
-            final Method m = device.getClass().getMethod("createInsecureRfcommSocketToServiceRecord", UUID.class);
-            return (BluetoothSocket) m.invoke(device, BT_MODULE_UUID);
-        } catch (Exception e) {
-            Log.e(TAG, "Could not create Insecure RFComm Connection",e);
-        }
-        return  device.createRfcommSocketToServiceRecord(BT_MODULE_UUID);
-    }
 
     private void offsetButtonManager(){
         speedOffset =0 ;
@@ -464,5 +394,66 @@ public class MainActivity extends AppCompatActivity {
          speedOffset += val ;
          offset.setText(String.format("%.0f",speedOffset));
          mSpeed.setText(String.format("%.0f",readSpeed));
+    }
+
+    private void handlerMessageProcessor(Message msg) {
+        if (elm327Launcher==null) {
+                nullifySpeedAndRpm(msg);
+                return;
+        }
+        byte[] buffer = new byte[msg.obj.toString().length()];
+        Arrays.fill(buffer, (byte) 0x00);
+        buffer = (byte[]) msg.obj;
+        int msgLength = msg.arg1;
+        String str = new String(buffer, 0, msgLength, StandardCharsets.US_ASCII);
+        msgCount++;
+        String[] items = str.split(">");
+        for (String item : items) {
+            if (item.length() == 0) {
+                mRaw.setText(String.valueOf(msgCount) + " Empty");
+                continue;
+            }
+            ELM327Response resp = new ELM327Response(item);
+            if (resp.getPidAlias().equals("SPEED")) {
+                readSpeed = resp.getPidVal();
+                float currentSpeed = readSpeed;
+                Log.d("MAIN", "readSpeed : <" + readSpeed + "> speedOffset : <" + speedOffset + "> currentSpeed <" + currentSpeed + "> maxSpeed <" + maxSpeed + ">");
+                if (currentSpeed > maxSpeed + speedOffset) {
+                    Log.d("MAIN", "currentSpeed > maxSpeed + speedOffset");
+                    mSpeed.setTextColor(Color.BLACK);
+                    mSpeed.setBackgroundColor(Color.RED);
+                    try {
+                        toneGen1.startTone(ToneGenerator.TONE_CDMA_PIP, 1500);
+                    } catch (Exception e) {
+                        Log.d("Main", "ToneGenerator: " + e.getMessage());
+                    }
+                } else {
+                    mSpeed.setTextColor(Color.BLACK);
+                    mSpeed.setTypeface(null, Typeface.BOLD);
+                    mSpeed.setBackgroundColor(Color.rgb(0, 255, 0));
+                    //
+                    toneGen1.stopTone();
+                }
+                mSpeed.setText(String.valueOf(resp.getPidVal()));
+            } else if (resp.getPidAlias().equals("RPM")) {
+                mRpm.setText(String.valueOf(resp.getPidVal() / 4));
+            } else {
+                int i = 0;
+
+            }
+            mRaw.setText(String.valueOf(msgCount) + "?" + resp.getRaw());
+        }
+    }
+
+    private void nullifySpeedAndRpm(Message msg) {
+         Log.d("Main","nullifySpeedAndRpm");
+         mSpeed.setTextColor(Color.GRAY);
+         mSpeed.setTypeface(null, Typeface.BOLD);
+         mSpeed.setBackgroundColor(Color.WHITE);
+         mSpeed.setText("Off");
+         mRpm.setTextColor(Color.GRAY);
+         mRpm.setTypeface(null, Typeface.BOLD);
+         mRpm.setBackgroundColor(Color.WHITE);
+         mRpm.setText("Off");
     }
 }
